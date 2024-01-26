@@ -10,26 +10,28 @@ function Login() {
 
     const handleSubmit = async (event) => {
         event.preventDefault();
-
+    
         try {
-            const response = await fetch('/login', {
+            const response = await fetch('http://localhost:3002/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({ phone_number: phoneNumber, password }),
             });
-
+    
             if (response.ok) {
-                console.log('Login successful');
+                const data = await response.json();
+                console.log('Login successful', data);
                 navigate('/game');
             } else {
-                console.log('Login failed');
+                console.log('Login failed', response.status);
             }
         } catch (error) {
             console.error('There was an error logging in:', error);
         }
     };
+    
 
     return (
         <div className={styles.formContainer}>

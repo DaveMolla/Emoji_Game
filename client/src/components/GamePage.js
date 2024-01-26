@@ -3,7 +3,7 @@ import io from 'socket.io-client';
 import './App.css';
 
 const GamePage = () => {
-  const [userPhoneNumber, setUserPhoneNumber] = useState(''); 
+  // const [userPhoneNumber, setUserPhoneNumber] = useState(''); 
   const [emojis, setEmojis] = useState([]);
   const [selectedEmojis, setSelectedEmojis] = useState([]);
   const [score, setScore] = useState(0);
@@ -123,6 +123,7 @@ const GamePage = () => {
       <header className="App-header">
         <h1>Emoji Matching Game</h1>
         <div>Score: {score}</div>
+        {/* <div>userPhoneNumber: {setUserPhoneNumber}</div> */}
         <div>Time Left: {timeLeft}</div>
         {waitingForPlayer && <p>Waiting for another player...</p>}
         {countdown !== null && <p>Starting in: {countdown}</p>}
