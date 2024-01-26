@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './AuthForm.module.css';
+import { useAuth } from './AuthContext';
 
 
 function Login() {
     const [phoneNumber, setPhoneNumber] = useState('');
     const [password, setPassword] = useState('');
     const navigate = useNavigate();
+    const { setAuth } = useAuth();
+
 
     const handleSubmit = async (event) => {
         event.preventDefault();
@@ -23,12 +26,18 @@ function Login() {
             if (response.ok) {
                 const data = await response.json();
                 console.log('Login successful', data);
-                navigate('/game');
+
+                // Set the auth state with the received data
+                setAuth({ token: data.token, user: data.user });
+
+                navigate('/game'); // Navigate to the game page
             } else {
                 console.log('Login failed', response.status);
+                // Display a user-friendly error message
             }
         } catch (error) {
             console.error('There was an error logging in:', error);
+            // Display a user-friendly error message
         }
     };
     

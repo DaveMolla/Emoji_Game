@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import io from 'socket.io-client';
 import './App.css';
+import { useAuth } from './AuthContext';
+
 
 const GamePage = () => {
   // const [userPhoneNumber, setUserPhoneNumber] = useState(''); 
@@ -14,11 +16,20 @@ const GamePage = () => {
   const [showStartButton, setShowStartButton] = useState(true)
   const [countdown, setCountdown] = useState(null);
   const [sessionId, setSessionId] = useState(null);
+  const { auth, setAuth } = useAuth();
+
 
 
   useEffect(() => {
     const newSocket = io('http://localhost:3002');
     setSocket(newSocket);
+
+    newSocket.on('gameStarted', (gameState) => {
+      console.log('Game started:', gameState);
+      setStarted(true);
+      setEmojis(gameState.emojis);
+      setWaitingForPlayer(false);
+    });
 
     newSocket.on('matchFound', ({ score, emojis }) => {
       setScore(score);
@@ -116,6 +127,11 @@ const GamePage = () => {
     setEmojis([]);
     setWaitingForPlayer(false);
     setShowStartButton(true);
+  };
+
+  const handleLogout = () => {
+    setAuth(null); // Clear auth context
+    // Redirect to login page or use navigate from react-router
   };
 
   return (
