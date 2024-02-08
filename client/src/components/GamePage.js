@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 import './App.css';
 import { useAuth } from './AuthContext';
@@ -9,14 +9,17 @@ const GamePage = () => {
   const [emojis, setEmojis] = useState([]);
   const [selectedEmojis, setSelectedEmojis] = useState([]);
   const [score, setScore] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(60);
   const [started, setStarted] = useState(false);
   const [waitingForPlayer, setWaitingForPlayer] = useState(false);
   const [socket, setSocket] = useState(null);
   const [showStartButton, setShowStartButton] = useState(true)
   const [countdown, setCountdown] = useState(null);
   const [sessionId, setSessionId] = useState(null);
+  const [playerScores, setPlayerScores] = useState({ playerOne: 0, playerTwo: 0 });
   const { auth, setAuth } = useAuth();
+  const [timeLeft, setTimeLeft] = useState(60);
+  const initialTimeLeft = 60;
+  const timerInterval = useRef(null); 
 
 
 
@@ -32,6 +35,7 @@ const GamePage = () => {
     });
 
     newSocket.on('matchFound', ({ score, emojis }) => {
+      initializeGame();
       setScore(score);
       setEmojis(emojis);
     });
@@ -71,8 +75,13 @@ const GamePage = () => {
       setSelectedEmojis([]);
     });
 
-    newSocket.on('endGame', () => {
+    newSocket.on('timeUpdate', ({ timeLeft }) => {
+      setTimeLeft(timeLeft);
+    })
+
+    newSocket.on('endGame', (gameState) => {
       endGame();
+      setPlayerScores(gameState.scores);
     });
 
     return () => newSocket.disconnect();
@@ -87,10 +96,42 @@ const GamePage = () => {
   const startGame = () => {
     if (socket) {
       socket.emit('startGame');
+      setTimeLeft(initialTimeLeft);
       setShowStartButton(false);
       setWaitingForPlayer(true);
     }
   };
+
+
+  useEffect(() => {
+    if (started) {
+      timerInterval.current = setInterval(() => {
+        setTimeLeft(prevTime => prevTime > 0 ? prevTime - 1 : 0);
+      }, 1000);
+
+      return () => clearInterval(timerInterval.current);
+    }
+  }, [started]);
+
+  // useEffect(() => {
+  //   if (timeLeft === 0) {
+  //     endGame();
+  //     setShowStartButton(true);
+  //   }
+  // }, [timeLeft]);
+
+  const initializeGame = () => {
+    const emojiSet = ["😀", "😃", "😄", "😁", "😆", "😅", "😂", "🤣", "😊", "😇", "🙂", "🙃", "😉", "😌", "😍"];
+    let randomEmojis = [...emojiSet];
+    const duplicatedEmoji = randomEmojis[Math.floor(Math.random() * randomEmojis.length)];
+    randomEmojis.push(duplicatedEmoji);
+    randomEmojis.sort(() => Math.random() - 0.5);
+    randomEmojis = randomEmojis.slice(0, 16);
+
+    setEmojis(randomEmojis);
+    setSelectedEmojis([]);
+  };
+
 
   const handleEmojiClick = (index) => {
     if (!started || selectedEmojis.includes(index)) {
@@ -104,12 +145,12 @@ const GamePage = () => {
       const [firstEmojiIndex, secondEmojiIndex] = newSelectedEmojis;
       if (emojis[firstEmojiIndex] === emojis[secondEmojiIndex]) {
         setScore((prevScore) => prevScore + 1);
-        socket.emit('emojiMatch', {
-          indices: [firstEmojiIndex, secondEmojiIndex],
-          sessionId
+        socket.emit('matchFound', {
+          sessionId,
+          emojis: initializeGame()
         });
       } else {
-        socket.emit('emojiNoMatch', {
+        socket.emit('noMatch', {
           indices: [firstEmojiIndex, secondEmojiIndex],
           sessionId
         });

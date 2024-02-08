@@ -53,15 +53,39 @@ function shuffleAndDuplicateEmojis(emojiSet) {
   return emojis.slice(0, 16);
 }
 
+// function initializeGame(sessionId) {
+//   const emojiSet = generateEmojiSet();
+//   gameSessions[sessionId] = {
+//     emojis: shuffleAndDuplicateEmojis(emojiSet),
+//     selectedEmojis: [],
+//     score: 0,
+//     timeLeft: 60,
+//     players: [],
+//   };
+// }
+
 function initializeGame(sessionId) {
   const emojiSet = generateEmojiSet();
   gameSessions[sessionId] = {
     emojis: shuffleAndDuplicateEmojis(emojiSet),
     selectedEmojis: [],
-    score: 0,
+    scores: { playerOne: 0, playerTwo: 0 },
     timeLeft: 60,
     players: [],
+    timer: null
   };
+}
+
+function startCountdown(sessionId) {
+  gameSessions[sessionId].timer = setInterval(() => {
+    if (gameSessions[sessionId].timeLeft > 0) {
+      gameSessions[sessionId].timeLeft--;
+      io.to(sessionId).emit('timeUpdate', { timeLeft: gameSessions[sessionId].timeLeft });
+    } else {
+      clearInterval(gameSessions[sessionId].timer);
+      io.to(sessionId).emit('endGame', gameSessions[sessionId]);
+    }
+  }, 1000);
 }
 
 io.on('connection', (socket) => {
@@ -84,6 +108,9 @@ io.on('connection', (socket) => {
       gameSessions[sessionId].players.push(playerOneId, playerTwoId);
 
       io.to(sessionId).emit('gameStarted', gameSessions[sessionId]);
+
+      startCountdown(sessionId);
+
     } else {
 
       io.to(socket.id).emit('waitingForPlayer');
