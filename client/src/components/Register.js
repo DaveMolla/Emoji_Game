@@ -11,7 +11,7 @@ function Register() {
         event.preventDefault();
 
         try {
-            const response = await fetch('/register', {
+            const response = await fetch('http://localhost:3002/register', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -19,11 +19,14 @@ function Register() {
                 body: JSON.stringify({ phone_number: phoneNumber, password }),
             });
 
+            console.log('so far so good');
+
+
             if (response.ok) {
                 console.log('Registration successful');
                 navigate('/game');
             } else {
-                console.log('Registration failed');
+                console.log('Registration failed', response.status);
             }
         } catch (error) {
             console.error('There was an error registering:', error);
@@ -56,7 +59,7 @@ function Register() {
             </form>
         </div>
     );
-    
+
 }
 
 export default Register;

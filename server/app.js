@@ -152,12 +152,13 @@ app.post('/login', async (req, res) => {
 // Registration route
 app.post('/register', async (req, res) => {
   const { phone_number, password } = req.body;
+  console.log('so far so good');
   if (!phone_number || !password) {
-      return res.status(400).send('Both phone number and password are required.');
+    return res.status(400).send('Both phone number and password are required.');
   }
   const existingUser = await User.findOne({ phone_number });
   if (existingUser) {
-      return res.status(400).send('User already exists.');
+    return res.status(400).send('User already exists.');
   }
   const hashedPassword = await bcrypt.hash(password, 10);
   const user = new User({ phone_number, password: hashedPassword });
@@ -170,11 +171,11 @@ app.post('/login', async (req, res) => {
   const { phone_number, password } = req.body;
   const user = await User.findOne({ phone_number });
   if (!user) {
-      return res.status(401).json({ message: 'User not found.' });
+    return res.status(401).json({ message: 'User not found.' });
   }
   const validPassword = await bcrypt.compare(password, user.password);
   if (!validPassword) {
-      return res.status(401).json({ message: 'Incorrect password.' });
+    return res.status(401).json({ message: 'Incorrect password.' });
   }
   const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
   res.status(200).json({ message: 'Login successful.', token: token });
