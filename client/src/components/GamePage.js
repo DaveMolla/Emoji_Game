@@ -15,11 +15,14 @@ const GamePage = () => {
   const [showStartButton, setShowStartButton] = useState(true)
   const [countdown, setCountdown] = useState(null);
   const [sessionId, setSessionId] = useState(null);
-  const [playerScores, setPlayerScores] = useState({ playerOne: 0, playerTwo: 0 });
+  // const [playerScores, setPlayerScores] = useState({ playerOne: 0, playerTwo: 0 });
   const { auth, setAuth } = useAuth();
   const [timeLeft, setTimeLeft] = useState(60);
   const initialTimeLeft = 60;
   const timerInterval = useRef(null); 
+  const [playerScores, setPlayerScores] = useState({});
+  const [winner, setWinner] = useState(null);
+  const [gameOver, setGameOver] = useState(false); // State to handle game over logic
 
 
 
@@ -55,6 +58,11 @@ const GamePage = () => {
       setSessionId(gameState.sessionId);
     });
 
+    newSocket.on('scoresUpdated', (data) => {
+      setPlayerScores(data.scores);
+    });
+    
+
     newSocket.on('clearSelectedEmojis', () => {
       setSelectedEmojis([]);
     });
@@ -80,18 +88,28 @@ const GamePage = () => {
     })
 
     newSocket.on('endGame', (gameState) => {
-      endGame();
-      setPlayerScores(gameState.scores);
+      endGame(); // This should reset your game state as necessary
+
+      if (gameState.winner) {
+        setWinner(gameState.winner); // This sets the winner in your component's state
+        setGameOver(true); // If you have a state for this, set the game as over
+      } else {
+        console.error('Winner information not provided:', gameState);
+      }
+      // if (gameState.scores) {
+      //   setPlayerScores(gameState.scores);
+      //   setWinner(gameState.winner); // This will be the winner's ID
+      //   setGameOver(true); // If you have a state for this, set the game as over
+      // } else {
+      //   // Handle the case where gameState.scores is null or undefined
+      //   console.error('Scores object is undefined or null in the gameState:', gameState);
+      //   // You can set some default values or show an error message to the user
+      // }
     });
+    
 
     return () => newSocket.disconnect();
   }, []);
-
-  // useEffect(() => {
-  //   if (timeLeft === 0) {
-  //     endGame();
-  //   }
-  // }, [timeLeft]);
 
   const startGame = () => {
     if (socket) {
@@ -112,13 +130,6 @@ const GamePage = () => {
       return () => clearInterval(timerInterval.current);
     }
   }, [started]);
-
-  // useEffect(() => {
-  //   if (timeLeft === 0) {
-  //     endGame();
-  //     setShowStartButton(true);
-  //   }
-  // }, [timeLeft]);
 
   const initializeGame = () => {
     const emojiSet = ["😀", "😃", "😄", "😁", "😆", "😅", "😂", "🤣", "😊", "😇", "🙂", "🙃", "😉", "😌", "😍"];
@@ -161,7 +172,16 @@ const GamePage = () => {
     }
   };
 
+  // const endGame = () => {
+  //   setStarted(false);
+  //   setScore(0);
+  //   setTimeLeft(30);
+  //   setEmojis([]);
+  //   setWaitingForPlayer(false);
+  //   setShowStartButton(true);
+  // };
   const endGame = () => {
+    clearInterval(timerInterval.current);
     setStarted(false);
     setScore(0);
     setTimeLeft(60);
@@ -170,17 +190,49 @@ const GamePage = () => {
     setShowStartButton(true);
   };
 
+
   const handleLogout = () => {
     setAuth(null); // Clear auth context
     // Redirect to login page or use navigate from react-router
   };
 
+  // return (
+  //   <div className="App">
+  //     <header className="App-header">
+  //       <h1>Emoji Matching Game</h1>
+  //       <div>Score: {score}</div>
+  //       {/* <div>userPhoneNumber: {setUserPhoneNumber}</div> */}
+  //       {winner && <div>Winner: {winner}</div>} {/* Display the winner */}
+        // <div>Time Left: {timeLeft}</div>
+        // {waitingForPlayer && <p>Waiting for another player...</p>}
+        // {countdown !== null && <p>Starting in: {countdown}</p>}
+        // {showStartButton && !waitingForPlayer && (
+        //   <button onClick={startGame}>Start Game</button>
+        // )}
+        // <div className="emoji-grid">
+        //   {emojis.length > 0 && emojis.map((emoji, index) => (
+        //     <button
+        //       key={index}
+        //       className={`emoji ${selectedEmojis.includes(index) ? 'selected' : ''}`}
+        //       onClick={() => handleEmojiClick(index)}
+        //       disabled={!started}
+        //     >
+        //       {emoji}
+        //     </button>
+        //   ))}
+        // </div>
+  //     </header>
+  //   </div>
+  // );
   return (
     <div className="App">
       <header className="App-header">
         <h1>Emoji Matching Game</h1>
         <div>Score: {score}</div>
-        {/* <div>userPhoneNumber: {setUserPhoneNumber}</div> */}
+        {gameOver && winner && <div>Winner ID: {winner}</div>}
+        {Object.entries(playerScores).map(([playerId, score]) => (
+          <div key={playerId}>{`Player ID: ${playerId}, Score: ${score}`}</div>
+        ))}
         <div>Time Left: {timeLeft}</div>
         {waitingForPlayer && <p>Waiting for another player...</p>}
         {countdown !== null && <p>Starting in: {countdown}</p>}
